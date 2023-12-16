@@ -2,10 +2,10 @@ import speech_recognition as sr
 import pyttsx3
 import openai
 import os
-
-# Set your OpenAI API key
-openai.api_key = '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'
-
+from dotenv import load_dotenv
+import pygame
+# Set your API keys
+openai.api_key = os.getenv('OPENAI_KEY')
 # Initialize the recognizer
 r = sr.Recognizer()
 
@@ -21,6 +21,7 @@ def wakeWord(text):
     text = text.lower()
     return any(word in text for word in WAKE_WORDS)
 
+pygame.mixer.init()
 # Function to perform actions based on user commands
 def performAction(command):
     if "open" in command:
@@ -78,12 +79,12 @@ while True:
             MyText = r.recognize_google(audio_data, language='en-US')
             print(MyText)
 
-            if "bye" or "goodbye" or "goodnight" in command:
-                SpeakText("Bye, have a good day")
-                exit()
+            # if "bye" or "goodbye" or "goodnight" in command:
+            #     SpeakText("Bye, have a good day")
+            #     exit()
 
 
-            elif wakeWord(MyText):
+            if wakeWord(MyText):
                 SpeakText("Hello, How can I assist you?")
 
                 # Listen for the user's command after the wake word
@@ -92,6 +93,10 @@ while True:
 
                 # Perform actions based on the user's command
                 performAction(command)
+            
+            elif "bye" or "goodbye" or "goodnight" in command:
+                SpeakText("Bye, have a good day")
+                exit()
 
         except sr.UnknownValueError:
             print("Could not understand audio")

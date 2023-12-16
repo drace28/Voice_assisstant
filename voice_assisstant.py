@@ -1,11 +1,26 @@
 import speech_recognition as sr
 import pyttsx3
 import openai
+import pyautogui
 import os
+import time
 from dotenv import load_dotenv
-import pygame
+import psutil
+from pynput.keyboard import Controller, Key
+
+# Load the .env file
+load_dotenv()
+keyboard = Controller()
+
 # Set your API keys
 openai.api_key = os.getenv('OPENAI_KEY')
+
+def is_spotify_running():
+    for process in psutil.process_iter(['name']):
+        if process.info['name'] == 'Spotify.exe':
+            return True
+    return False
+
 # Initialize the recognizer
 r = sr.Recognizer()
 
@@ -21,7 +36,7 @@ def wakeWord(text):
     text = text.lower()
     return any(word in text for word in WAKE_WORDS)
 
-pygame.mixer.init()
+
 # Function to perform actions based on user commands
 def performAction(command):
     if "open" in command:
@@ -30,6 +45,73 @@ def performAction(command):
         program = words[index + 1]
         SpeakText(f"Opening{program}")
         os.system(f'start {program}')
+    elif "close" in command:
+        words = command.split()
+        index = words.index("close")
+        program = words[index + 1]
+        SpeakText(f"Closing{program}")
+        os.system(f'taskkill /f /im {program}.exe')
+    elif "type" in command:
+        words = command.split()
+        index = words.index("type")
+        text = words[index + 1:]
+        text = " ".join(text)
+        SpeakText(f"Typing{text}")
+        pyautogui.typewrite(text)
+    elif "search" in command:
+        words = command.split()
+        index = words.index("search")
+        query = words[index + 1:]
+        query = " ".join(query)
+        SpeakText(f"Searching for {query}")
+        os.system(f'start https://www.google.com/search?q={query}')
+        try:
+        # Send the user's question to ChatGPT
+            response = openai.Completion.create(
+                engine="davinci",
+                prompt=f"I am searching for {query}",
+                temperature=0.7,
+                max_tokens=150,
+                n=1,
+            )
+            SpeakText(response["choices"][0]["text"].strip())
+        except Exception as e:
+            print(f"Error querying ChatGPT: {e}")
+            SpeakText("I'm sorry, I couldn't generate a response at the moment.")
+    elif "send whatsapp message" in command:
+        # Extract the recipient and message from the command
+        recipient, message = command.replace("send whatsapp message ", "").split(" message ")
+        SpeakText(f"Sending WhatsApp message to {recipient}")
+        # Open WhatsApp
+        os.system('start whatsapp')  # Replace with the path to your WhatsApp.exe
+        time.sleep(5)  # Wait for WhatsApp to open
+        # Click on the search box
+        pyautogui.click(x=110, y=200)  # Replace with the coordinates of your search box
+        # Type the recipient's name and press enter
+        pyautogui.write(recipient)
+        pyautogui.press('enter')
+        time.sleep(2)  # Wait for the chat to open
+        # Type the message and press enter
+        pyautogui.write(message)
+        pyautogui.press('enter')
+    
+    elif "play music" in command or "pause music" in command or "next track" in command or "previous track" in command:
+        if not is_spotify_running():
+            SpeakText("Opening Spotify")
+            os.system('start spotify')  # This command opens Spotify on Windows
+        if "play music" in command or "pause music" in command:
+            SpeakText("OK")
+            with keyboard.pressed(Key.media_play_pause):
+                pass  # This shortcut plays/pauses music in Spotify
+        elif "next track" in command:
+            SpeakText("Skipping to the next track on Spotify")
+            with keyboard.pressed(Key.media_next):
+                pass  # This shortcut skips to the next track in Spotify
+        elif "previous track" in command:
+            SpeakText("Going to the previous track on Spotify")
+            with keyboard.pressed(Key.media_previous):
+                pass
+    
     elif "ask a question" in command:
         SpeakText("Sure, what would you like to ask?")
         audio_data = r.listen(source, timeout=10)  # Listen for the user's question

@@ -6,6 +6,7 @@ import os
 import time
 from dotenv import load_dotenv
 import psutil
+import google.generativeai as genai
 from pynput.keyboard import Controller, Key
 
 # Load the .env file
@@ -14,6 +15,11 @@ keyboard = Controller()
 
 # Set your API keys
 openai.api_key = os.getenv('OPENAI_KEY')
+GOOGLE_API_KEY= os.getenv('GOOGLE_API_KEY')
+
+genai.configure(api_key=GOOGLE_API_KEY)
+
+model = genai.GenerativeModel("gimini-pro")
 
 def is_spotify_running():
     for process in psutil.process_iter(['name']):
@@ -116,7 +122,7 @@ def performAction(command):
         SpeakText("Sure, what would you like to ask?")
         audio_data = r.listen(source, timeout=10)  # Listen for the user's question
         question = r.recognize_google(audio_data, language='en-US')
-        response = chatgpt_query(question)
+        response = model.generate_content(question)
         SpeakText(response)
     elif "bye" in command:
         SpeakText("Bye, See you soon")

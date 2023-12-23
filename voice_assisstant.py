@@ -118,7 +118,7 @@ def performAction(command):
             with keyboard.pressed(Key.media_previous):
                 pass
     
-    elif "ask a question" in command:
+    elif "ask a question" or "bard" in command:
         SpeakText("Sure, what would you like to ask?")
         audio_data = r.listen(source, timeout=10)  # Listen for the user's question
         question = r.recognize_google(audio_data, language='en-US')
